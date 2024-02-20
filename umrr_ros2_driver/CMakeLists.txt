@@ -45,7 +45,10 @@ endif()
 
 ament_auto_find_build_dependencies()
 
-set(SMARTMICRO_LIB_DIR "lib-linux-x86_64-gcc_9")
+# For x86
+#set(SMARTMICRO_LIB_DIR "lib-linux-x86_64-gcc_9")
+# For ARM
+set(SMARTMICRO_LIB_DIR "lib-linux-armv8-gcc_9")
 
 # specify the path to search for the libraries
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/smartmicro/${SMARTMICRO_LIB_DIR})
