@@ -412,11 +412,17 @@ SmartmicroRadarNode::SmartmicroRadarNode(const rclcpp::NodeOptions & node_option
     std::bind(
       &SmartmicroRadarNode::radar_mode, this, std::placeholders::_1, std::placeholders::_2));
 
-  // create a ros2 service to change the IP address
-  ip_addr_srv_ = create_service<umrr_ros2_msgs::srv::SetIp>(
-    "smart_radar/set_ip_address",
+  // create a ros2 service to change the source IP address
+  ip_src_addr_srv_ = create_service<umrr_ros2_msgs::srv::SetIp>(
+    "smart_radar/set_ip_src_address",
     std::bind(
-      &SmartmicroRadarNode::ip_address, this, std::placeholders::_1, std::placeholders::_2));
+      &SmartmicroRadarNode::ip_src_address, this, std::placeholders::_1, std::placeholders::_2));
+
+  // create a ros2 service to change the destination IP address
+  ip_dest_addr_srv_ = create_service<umrr_ros2_msgs::srv::SetIp>(
+    "smart_radar/set_ip_dest_address",
+    std::bind(
+      &SmartmicroRadarNode::ip_dest_address, this, std::placeholders::_1, std::placeholders::_2));
 
   // create a ros2 service to send command to radar
   command_srv_ = create_service<umrr_ros2_msgs::srv::SendCommand>(
@@ -524,7 +530,7 @@ void SmartmicroRadarNode::radar_mode(
   result->res = "Service conducted successfully";
 }
 
-void SmartmicroRadarNode::ip_address(
+void SmartmicroRadarNode::ip_src_address(
   const std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Request> request,
   std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Response> result)
 {
@@ -553,6 +559,64 @@ void SmartmicroRadarNode::ip_address(
   std::shared_ptr<SetParamRequest<uint32_t>> ip_address =
     std::make_shared<SetParamRequest<uint32_t>>(
       "auto_interface_0dim", "ip_source_address", request->value_ip);
+
+  std::shared_ptr<CmdRequest> cmd =
+    std::make_shared<CmdRequest>("auto_interface_command", "comp_eeprom_ctrl_save_param_sec", 2010);
+
+  if (!batch->AddRequest(ip_address)) {
+    result->res_ip = "Failed to add instruction to batch! ";
+    return;
+  }
+  if (!batch->AddRequest(cmd)) {
+    result->res_ip = "Failed to add instruction to batch! ";
+    return;
+  }
+  // send instruction batch to the device
+  if (
+    com::types::ERROR_CODE_OK !=
+    inst->SendInstructionBatch(
+      batch, std::bind(
+               &SmartmicroRadarNode::sensor_response_ip, this, client_id, std::placeholders::_2))) {
+    result->res_ip = "Service not conducted";
+    return;
+  } else {
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Radar must be restarted and the parameters in the param file "
+      "must be updated !!.");
+    result->res_ip = "Service conducted successfully";
+  }
+}
+
+void SmartmicroRadarNode::ip_dest_address(
+  const std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Request> request,
+  std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Response> result)
+{
+  std::shared_ptr<InstructionServiceIface> inst{m_services->GetInstructionService()};
+  timer = this->create_wall_timer(
+    std::chrono::seconds(2), std::bind(&SmartmicroRadarNode::my_timer_callback, this));
+  bool check_flag = false;
+  client_id = request->sensor_id;
+  for (auto & sensor : m_sensors) {
+    if (client_id == sensor.id) {
+      check_flag = true;
+      break;
+    }
+  }
+  if (!check_flag) {
+    result->res_ip = "Sensor ID entered is not listed in the param file! ";
+    return;
+  }
+
+  std::shared_ptr<InstructionBatch> batch;
+  if (!inst->AllocateInstructionBatch(client_id, batch)) {
+    result->res_ip = "Failed to allocate instruction batch! ";
+    return;
+  }
+
+  std::shared_ptr<SetParamRequest<uint32_t>> ip_address =
+    std::make_shared<SetParamRequest<uint32_t>>(
+      "auto_interface_0dim", "ip_dest_address", request->value_ip);
 
   std::shared_ptr<CmdRequest> cmd =
     std::make_shared<CmdRequest>("auto_interface_command", "comp_eeprom_ctrl_save_param_sec", 2010);

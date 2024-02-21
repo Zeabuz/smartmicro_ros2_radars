@@ -465,9 +465,15 @@ private:
       std::shared_ptr<umrr_ros2_msgs::srv::SetMode::Response> response);
 
   ///
-  /// @brief      Configure the sensor ip address.
+  /// @brief      Configure the sensor ip source address.
   ///
-  void ip_address(const std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Request> request,
+  void ip_src_address(const std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Request> request,
+             std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Response> response);
+
+  ///
+  /// @brief      Configure the sensor ip destination address.
+  ///
+  void ip_dest_address(const std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Request> request,
              std::shared_ptr<umrr_ros2_msgs::srv::SetIp::Response> response);
 
   ///
@@ -485,7 +491,8 @@ private:
       std::shared_ptr<umrr_ros2_msgs::srv::FirmwareDownload::Response> result);
 
   rclcpp::Service<umrr_ros2_msgs::srv::SetMode>::SharedPtr mode_srv_;
-  rclcpp::Service<umrr_ros2_msgs::srv::SetIp>::SharedPtr ip_addr_srv_;
+  rclcpp::Service<umrr_ros2_msgs::srv::SetIp>::SharedPtr ip_src_addr_srv_;
+  rclcpp::Service<umrr_ros2_msgs::srv::SetIp>::SharedPtr ip_dest_addr_srv_;
   rclcpp::Service<umrr_ros2_msgs::srv::SendCommand>::SharedPtr command_srv_;
   rclcpp::Service<umrr_ros2_msgs::srv::FirmwareDownload>::SharedPtr download_srv_;
 
